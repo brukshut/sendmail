@@ -1,11 +1,11 @@
 {
   "builders": [{
     "type": "docker",
-    "image": "sendmail-base:0.1",
+    "image": "debian:latest",
     "commit": true,
-    "pull": false,
+    "pull": true,
     "changes": [
-      "LABEL version=0.2"
+      "LABEL version=0.1"
     ]    
   }],
   "provisioners": [
@@ -17,6 +17,8 @@
     {
       "type": "shell",
       "scripts": [
+        "scripts/install_packages.sh",
+        "scripts/build_openssl.sh",
         "scripts/build_sendmail.sh"
       ]
     }
@@ -24,6 +26,6 @@
   "post-processors": [{
     "type": "docker-tag",
     "repository": "sendmail-base",
-    "tag": "0.2"
+    "tag": "0.1"
   }]
 }
