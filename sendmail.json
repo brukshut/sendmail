@@ -1,0 +1,29 @@
+{
+  "builders": [{
+    "type": "docker",
+    "image": "sendmail-base:0.1",
+    "commit": true,
+    "pull": false,
+    "changes": [
+      "LABEL version=0.2"
+    ]    
+  }],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "scripts/site.config.m4",
+      "destination": "/tmp/site.config.m4"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/build_sendmail.sh"
+      ]
+    }
+  ],
+  "post-processors": [{
+    "type": "docker-tag",
+    "repository": "sendmail-base",
+    "tag": "0.2"
+  }]
+}
