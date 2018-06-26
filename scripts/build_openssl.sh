@@ -12,13 +12,24 @@ CXX=/usr/bin/g++
 LD=/usr/bin/ld
 AS=/usr/bin/as
 AR=/usr/bin/ar
-export PATH CC CXX LD AS AR
+CFLAGS=-fPIC
+export CFLAGS PATH CC CXX LD AS AR
 
+## fetch and unpack
 wget $URL
-tar xzvf ${NAME}-${VERSION}.tar.gz
+tar xzvf ${URL##*/}
+
+## compile
 cd ${NAME}-${VERSION}
-./config --prefix=/usr/local
-/usr/bin/make -j2
-/usr/bin/make install
-cd .. && rm -rf ${NAME}-${VERSION}*
+./config --prefix=/usr/local shared
+/usr/bin/make
+sudo /usr/bin/make install
+
+## cleanup
+cd ..
+rm ${URL##*/}
+rm -rf ${NAME}-${VERSION}
+
+
+
 
