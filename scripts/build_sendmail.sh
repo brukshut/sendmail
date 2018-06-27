@@ -50,14 +50,15 @@ done
 mkdir -p /etc/mail
 
 ## compile
-cp /tmp/site.config.m4 ${NAME}-${VERSION}/devtools/Site/site.config.m4
+cp site.config.m4 ${NAME}-${VERSION}/devtools/Site/site.config.m4
 cd ${NAME}-${VERSION}
 ./Build
 ./Build install
 
-cd libsharedmilter
+cd libmilter
 ./Build
 ./Build install
+cd ..
 
 ## man pages
 for manpage in sendmail editmap mailstats makemap praliases smrsh; do
