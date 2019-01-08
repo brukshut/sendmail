@@ -3,75 +3,97 @@
 ##
 ## build.sendmail.sh
 ##
-## root@lido:/etc/mail# /usr/local/sbin/sendmail -d0.1 -bv
-## Version 8.15.2
-## Compiled with: DNSMAP IPV6_FULL LOG MATCHGECOS MILTER MIME7TO8 MIME8TO7
-## NAMED_BIND NETINET NETUNIX NEWDB PIPELINING SASLv2 SCANF
-## STARTTLS USERDB XDEBUG
-##
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
-NAME=sendmail
-VERSION=8.15.2
-URL=http://ftp.sendmail.org/${NAME}.${VERSION}.tar.gz
 
-## create users and group
-if getent group floppy > /dev/null 2>&1; then
-  groupdel floppy
-  groupadd -g 25 smmsp
-  useradd -u 25 -g 25 -d /var/spool/clientmqueue -s /bin/false smmsp
-fi
+## functions
+function fetch_sendmail_src {
+  ## sendmail src is required for macros in sendmail.mc and submit.mc
+  local version=$1
+  local name=sendmail
+  local srcdir=/usr/local/src
+  local tarball=${name}.${version}.tar.gz
+  local src=${name}-${version}
+  local url=http://ftp.sendmail.org/${name}.${version}.tar.gz
+  [[ -d ${srcdir} ]] || sudo mkdir -p ${srcdir}
+  [[ -d ${srcdir}/${src} ]] ||
+      ( [[ -e ${srcdir}/${tarball} ]] ||
+        ( wget $url --output-document=/tmp/${tarball}
+          sudo mv /tmp/${tarball} $srcdir
+          sudo chown root:root ${srcdir}/${tarball}
+          sudo tar xzvf ${srcdir}/${tarball} -C ${srcdir}
+          sudo chown -R root:root ${srcdir}/${src} ))
+}
 
-## fetch tarball
-if [ ! -e ${NAME}.${VERSION}.tar.gz ]; then
-  wget $URL
-fi
-tar xzvf ${NAME}.${VERSION}.tar.gz
+function create_sendmail_dirs {
+  ## create package directory structure
+  for mydir in bin sbin lib include libexec share; do
+    [[ ! -d /usr/local/${mydir} ]] && sudo mkdir -p /usr/local/${mydir}
+  done
+  ## configuration directory
+  [[ -d /etc/mail ]] || sudo mkdir -p /etc/mail
+  ## man folders
+  for mandir in man1 man5 man8; do
+    [[ ! -d /usr/local/share/man/${mandir} ]] &&
+      sudo mkdir -p /usr/local/share/man/${mandir}
+  done
+}
 
-## build libmilter as shared object, not working
-#cp ${SRCDIR}/sharedlibrary.m4 ${NAME}-${VERSION}/devtools/M4/UNIX
-#cd ${NAME}-${VERSION} && rsync -av libmilter/ libsharedmilter
-#cd libsharedmilter && perl -p -i -e 's/library/sharedlibrary/g' Makefile.m4
+function create_sendmail_users {
+  ## create users and group
+  [[ -z $(getent group floppy) ]] || sudo groupdel floppy
+  sudo groupadd -g 25 smmsp
+  sudo useradd -u 25 -g 25 -d /var/spool/clientmqueue -s /bin/false smmsp
+  sudo mkdir /var/spool/mqueue
+  sudo chmod 700 /var/spool/mqueue
+}
 
-## create package directory structure
-for MYDIR in bin sbin lib include libexec share; do
-  if [ ! -d /usr/local/${MYDIR} ]; then
-    mkdir -p usr/local/${MYDIR}
-  fi
-done
+function build_sendmail {
+  local version=$1
+  local srcdir=/usr/local/src
+  [[ -e /tmp/site.config.m4 ]] &&   
+    cp /tmp/site.config.m4 ${srcdir}/sendmail-${version}/devtools/Site
+    cd ${srcdir}/sendmail-${version} &&
+      ( sudo ./Build 
+        sudo ./Build install )
+    cd libmilter &&
+      ( sudo ./Build
+        sudo ./Build install )
+}
 
-## man folders
-for MANDIR in man1 man5 man8; do
-  if [ ! -d /usr/local/share/man/${MYDIR} ]; then
-    mkdir -p /usr/local/share/man/${MANDIR}
-  fi
-done
+function install_sendmail_man {
+  local version=$1
+  local srcdir=/usr/local/src
+  [[ -d ${srcdir}/sendmail-${version} ]] && 
+    ( cd ${srcdir}/sendmail-${version}
+      ## man pages
+      for manpage in sendmail editmap mailstats makemap praliases smrsh; do
+        sudo install -v -m644 ${manpage}/${manpage}.8 /usr/local/share/man/man8
+      done
+      sudo install -v -m644 sendmail/aliases.5 /usr/local/share/man/man5
+      sudo install -v -m644 sendmail/mailq.1 /usr/local/share/man/man1
+      sudo install -v -m644 sendmail/newaliases.1 /usr/local/share/man/man1
+      sudo install -v -m644 vacation/vacation.1 /usr/local/share/man/man1 )
+}
 
-## configuration directory
-mkdir -p /etc/mail
+function sendmail_systemd_services {
+  ## sendmail.service and sendmail-runner.service
+  [[ -e /.dockerenv ]] || 
+    ( for name in sendmail sendmail-runner; do 
+      [[ -e /tmp/${name}.service ]] &&
+        ( sudo mv /tmp/${name}.service /lib/systemd/system
+          sudo chown root:root /lib/systemd/system/${name}.service
+          sudo chmod 644 /lib/systemd/system/${name}.service )
+      sudo systemctl enable ${name}.service
+      done
+      sudo systemctl daemon-reload )
+}
+## end functions
 
-## compile
-cp site.config.m4 ${NAME}-${VERSION}/devtools/Site/site.config.m4
-cd ${NAME}-${VERSION}
-./Build
-./Build install
-
-cd libmilter
-./Build
-./Build install
-cd ..
-
-## man pages
-for manpage in sendmail editmap mailstats makemap praliases smrsh; do
-  install -v -m644 $manpage/$manpage.8 /usr/local/share/man/man8
-done
-install -v -m644 sendmail/aliases.5 /usr/local/share/man/man5
-install -v -m644 sendmail/mailq.1 /usr/local/share/man/man1
-install -v -m644 sendmail/newaliases.1 /usr/local/share/man/man1
-install -v -m644 vacation/vacation.1 /usr/local/share/man/man1
-
-## cleanup
-cd ..
-rm -rf ${NAME}-${VERSION}*
-rm -rf ${NAME}.${VERSION}*
-
-
+## main
+create_sendmail_users
+create_sendmail_dirs
+fetch_sendmail_src 8.15.2
+build_sendmail 8.15.2
+install_sendmail_man 8.15.2
+sendmail_systemd_services
+## end main

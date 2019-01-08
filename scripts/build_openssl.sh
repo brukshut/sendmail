@@ -5,7 +5,7 @@
 ##
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 NAME=openssl
-VERSION=1.0.2o
+VERSION=1.0.2q
 URL=https://www.openssl.org/source/${NAME}-${VERSION}.tar.gz
 CC=/usr/bin/gcc
 CXX=/usr/bin/g++

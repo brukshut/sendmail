@@ -19,6 +19,7 @@ apt-get install emacs -y
 apt-get install vim -y
 apt-get install m4 -y
 apt-get install man -y
+apt-get install sudo -y
 
 ## for sendmail
 apt-get install libsasl2-dev -y
