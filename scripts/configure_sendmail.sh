@@ -10,7 +10,8 @@ function generate_sendmail_conf {
   for file in sendmail submit; do
     [[ -e /tmp/${file}.mc ]] &&
       ( sudo mv /tmp/${file}.mc /etc/mail
-        m4 /etc/mail/${file}.mc | sudo tee /etc/mail/${file}.cf )
+        m4 /etc/mail/${file}.mc | sudo tee /etc/mail/${file}.cf ) ||
+    true
   done
 }
 
@@ -19,24 +20,26 @@ function configure_saslauthd {
   [[ -d /etc/sasl2 ]] || sudo mkdir /etc/sasl2
   printf "%s\n" "pwcheck_method: saslauthd" | sudo tee $sendmail_conf
   printf "%s\n" "mech_list: PLAIN LOGIN" | sudo tee -a $sendmail_conf
-  sudo perl -i -pe 's/START=no/START=yes/' /etc/default/saslauthd
-  sudo systemctl enable saslauthd
-  sudo systemctl start saslauthd
+  [[ -e /etc/default/saslauthd ]] &&
+    sudo perl -i -pe 's/START=no/START=yes/' /etc/default/saslauthd
+  [[ -e /.dockerenv ]] && true ||
+    ( sudo systemctl enable saslauthd
+      sudo systemctl start saslauthd )
 }
 
 function configure_rsyslog {
   ## rsyslog rules
   [[ -e /tmp/25-sendmail.conf ]] &&
-    ( sudo mv /tmp/25-sendmail.conf /etc/rsyslog.d
-      sudo chmod 600 /etc/rsyslog.d/25-sendmail.conf
-      sudo chown root:root /etc/rsyslog.d/25-sendmail.conf
-      sudo systemctl restart rsyslog )
+    [[ -e /etc/rsyslog.d ]] &&
+      ( sudo mv /tmp/25-sendmail.conf /etc/rsyslog.d
+        sudo chmod 600 /etc/rsyslog.d/25-sendmail.conf
+        sudo chown root:root /etc/rsyslog.d/25-sendmail.conf
+        [[ -e /.dockerenv ]] || sudo systemctl restart rsyslog ) 
 }
 ## end functions
 
 ## main
-[[ -f ./sendmail-files.sh ]] && ./sendmail-files.sh
 generate_sendmail_conf
 configure_saslauthd
-configure_rsyslog
+#configure_rsyslog
 ## end main

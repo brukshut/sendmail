@@ -15,11 +15,23 @@
       "destination": "/tmp/site.config.m4"
     },
     {
+      "type": "file",
+      "source": "files/sendmail.mc",
+      "destination": "/tmp/sendmail.mc"
+    },
+    {
+      "type": "file",
+      "source": "files/submit.mc",
+      "destination": "/tmp/submit.mc"
+    },
+    {
       "type": "shell",
       "scripts": [
         "scripts/install_packages.sh",
         "scripts/build_openssl.sh",
-        "scripts/build_sendmail.sh"
+        "scripts/build_sendmail.sh",
+        "scripts/configure_sendmail.sh",
+        "scripts/sendmail_files.sh"
       ]
     }
   ],

@@ -22,6 +22,9 @@ apt-get install man -y
 apt-get install sudo -y
 
 ## for sendmail
-apt-get install libsasl2-dev -y
-apt-get install libdb5.3-dev -y
-
+sudo apt-get install m4 -y
+sudo apt-get install man -y
+sudo apt-get install libsasl2-dev -y
+sudo apt-get install sasl2-bin -y
+sudo apt-get install libdb5.3-dev -y
+sudo apt-get install libpam0g-dev -y

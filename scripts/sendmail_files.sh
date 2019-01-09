@@ -71,13 +71,13 @@ for file in access aliases genericstable local-host-names virtusertable; do
   [[ -e /tmp/${file} ]] && 
     ( sudo mv /tmp/${file} /etc/mail/${file}
       sudo chown root:root /etc/mail/${file}
-      sudo chown 644 /etc/mail/${file} )
+      sudo chmod 644 /etc/mail/${file} )
 done
 
 ## generate sendmail database maps
-for map in access genericstable virtusertable; do 
-  sudo cat /etc/mail/${map} | sudo makemap hash /etc/mail/${map}.db
-done
+#for map in access genericstable virtusertable; do 
+#  sudo cat /etc/mail/${map} | sudo makemap hash /etc/mail/${map}.db
+#done
 
 ## generate aliases
 sudo newaliases
